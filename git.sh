@@ -56,7 +56,7 @@ function checkGitRepos(){
 	fi
 	local GIT_REPO_LIST="$( find $SEARCH_DIR -type d -name .git 2>/dev/null )"
 	if [[ -n "$GIT_REPO_LIST" ]]; then
-		for GIT_REPO in "$GIT_REPO_LIST"
+		for GIT_REPO in $GIT_REPO_LIST
 		do
 			local OUT_OF_DATE=$( gitCommand "$GIT_REPO" "remote show origin" |  grep '(out of date)' )
 			if [[ -n "$OUT_OF_DATE" ]]; then
