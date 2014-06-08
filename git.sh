@@ -3,7 +3,7 @@ function gitCommand(){
 	local COMMAND="$2"
 	local GIT_DIR="$( echo $GIT_REPO | sed 's/\.git//g' )"
 	git --git-dir="$GIT_REPO" --work-tree="$GIT_DIR" $COMMAND
-	#echo '(out of date)'
+	#echo '(local out of date)'
 }
 function successMessage(){
 	local BUILD_MESSAGE="$1"
@@ -58,7 +58,7 @@ function checkGitRepos(){
 	if [[ -n "$GIT_REPO_LIST" ]]; then
 		for GIT_REPO in $GIT_REPO_LIST
 		do
-			local OUT_OF_DATE=$( gitCommand "$GIT_REPO" "remote show origin" |  grep '(out of date)' )
+			local OUT_OF_DATE=$( gitCommand "$GIT_REPO" "remote show origin" |  grep '(local out of date)' )
 			if [[ -n "$OUT_OF_DATE" ]]; then
 				gitCommand "$GIT_REPO" "pull"
 				build "$GIT_REPO"
