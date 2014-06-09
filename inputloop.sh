@@ -90,7 +90,7 @@ function deployToServer() {
 	fi
 }
 function getSTPAPPInstance() {
-	echo $( ps -ef | grep 'jboss.server.base.dir=' | grep -v 'grep' | awk -F'-Djboss.server.base.dir=' '{print $2}' | awk '{print $1}' )
+	echo $( ps -ef | grep 'jboss.server.base.dir' | grep -v grep | awk -F'jboss.server.base.dir=' '{print $2}' | grep -v 'print' | awk '{print $1}' )
 }
 function checkServerForArtifact() {
 	ARTIFACT="$1"
