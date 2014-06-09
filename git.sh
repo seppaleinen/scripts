@@ -1,3 +1,7 @@
+if [[ -z "${WORKSPACE}" ]]; then
+	export WORKSPACE="$( echo ~/workspace )"
+fi
+
 function gitCommand(){
 	local GIT_REPO="$1"
 	local COMMAND="$2"
@@ -9,9 +13,9 @@ function successMessage(){
 	local BUILD_MESSAGE="$1"
 	local BUILD_ARTIFACT="$2"
 	if [[ -n "$BUILD_MESSAGE" ]]; then
-		echo "$BUILD_ARTIFACT" build complete
+		echo "$BUILD_ARTIFACT build complete"
 	else
-		echo "$BUILD_ARTIFACT" build failure
+		echo "$BUILD_ARTIFACT build failure"
 	fi
 }
 function buildMaven(){
@@ -50,9 +54,9 @@ function build(){
 }
 function checkGitRepos(){
 	local ARTIFACT="$1"
-	local SEARCH_DIR=~/IdeaProjects
+	local SEARCH_DIR="${WORKSPACE}"
 	if [[ -n "$ARTIFACT" ]]; then
-		SEARCH_DIR=$( echo $SEARCH_DIR/$ARTIFACT )
+		SEARCH_DIR="$( echo $SEARCH_DIR/$ARTIFACT )"
 	fi
 	local GIT_REPO_LIST="$( find $SEARCH_DIR -type d -name .git 2>/dev/null )"
 	if [[ -n "$GIT_REPO_LIST" ]]; then

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 testEquality(){
-  	assertEquals 1 2
+  	assertEquals 1 1
 }
 
 test(){
