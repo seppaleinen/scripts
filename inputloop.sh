@@ -70,7 +70,7 @@ function inputloop() {
 	echo "2: Update, build and deploy all outdated gitrepos"
 	echo "3: Refresh artifacts deployed on running server"
 	echo "4: Change environment in standalone.xml"
-	echo "5: Deploy single artifact to running running server"
+	echo "5: Deploy single artifact to running server"
 
 	read INPUT
 	if [[ -z "$INPUT" ]]; then
@@ -93,7 +93,7 @@ function inputloop() {
 		5)
 			echo "Enter name of artifact that you want to deploy e.g vara-ear"
 			read ARTIFACT
-			deployToServer "$ARTIFACT"
+			deployToJboss "$ARTIFACT"
 		;;
 		esac
 		inputloop
@@ -107,10 +107,10 @@ function refreshServerArtifacts() {
 	for DEPLOYED_ARTIFACT in $DEPLOYED_ARTIFACTS
 	do
 		#get artifact-name from path
-		deployToServer "$( echo $DEPLOYED_ARTIFACT | awk -F'/' '{print $NF}' )"
+		deployToJboss "$( echo $DEPLOYED_ARTIFACT | awk -F'/' '{print $NF}' )"
 	done
 }
-function deployToServer() {
+function deployToJboss() {
 	#Get running server directory
 	local STP="$( getSTPAPPDIR )"
 	local ARTIFACT="$1"
@@ -123,8 +123,7 @@ function deployToServer() {
 
 	for FOUND_ARTIFACT in $FOUND_ARTIFACTS
 	do
-		echo Deploying artifact "$FOUND_ARTIFACT" to "$STP/deployments"
-		cp "$FOUND_ARTIFACT" "$STP/deployments"
+		deploy "$FOUND_ARTIFACT" "$STP/deployments"
 	done
 
 	if [[ -z "$FOUND_ARTIFACTS" ]]; then
@@ -143,11 +142,8 @@ function getTOMCATDIR(){
 }
 function deployToTomcat(){
 	local ARTIFACT="$1"
-	local TOMCAT="$( getTOMCATDIR )"
-	if [[ -n "$ARTIFACT" && -n "$TOMCAT" ]]; then
-		echo "Deploying $ARTIFACT to $TOMCAT/webapps"
-		cp "$ARTIFACT" "$TOMCAT/webapps"
-	fi
+	local TOMCAT="$( getTOMCATDIR )/webapps"
+	deploy "$ARTIFACT" "$TOMCAT"
 }
 function deployToGlassfish(){
 	local ARTIFACT="$1"
@@ -155,6 +151,32 @@ function deployToGlassfish(){
 	if [[ -n "$ARTIFACT" && -n "$GLASSFISH" ]]; then
 		echo "Deploying $ARTIFACT to $GLASSFISH"
 		asadmin deploy --force "$ARTIFACT"
+	fi
+}
+function deploy(){
+	local ARTIFACT="$1"
+	local SERVER_DEPLOY_DIR="$2"
+	if [[ -n "$ARTIFACT" && -n "$SERVER_DEPLOY_DIR" ]]; then
+		if [[ -n "$( find $SERVER_DEPLOY_DIR -type d | grep '$SERVER_DEPLOY_DIR$' )" ]]; then
+			if [[ -n "$( find $ARTIFACT -type f )" ]]; then
+				echo "Deploying $ARTIFACT to $SERVER_DEPLOY_DIR"
+				cp "$ARTIFACT" "$SERVER_DEPLOY_DIR"
+			fi
+		fi
+	fi
+}
+function checkWhichRunningServerAndDeploy(){
+	local ARTIFACT="$1"
+	local GLASSFISH_SERVER="$( getGLASSFISHDIR )"
+	local TOMCAT_SERVER="$( getTOMCATDIR )"
+	local JBOSS_SERVER="$( getSTPAPPDIR )"
+
+	[[ -n "$JBOSS_SERVER" ]] && deployToJboss "$ARTIFACT"
+	[[ -n "$GLASSFISH_SERVER" ]] && deployToGlassfish "$ARTIFACT"
+	[[ -n "$TOMCAT_SERVER" ]] && deployToTomcat "$ARTIFACT"
+
+	if [[ -z "$JBOSS_SERVER" && "$GLASSFISH_SERVER" && -z "$TOMCAT_SERVER" ]]; then
+		echo "No running servers."
 	fi
 }
 function checkServerForArtifactsAndDeploy() {
@@ -165,11 +187,9 @@ function checkServerForArtifactsAndDeploy() {
 	local DEPLOYED_ARTIFACTS=$( find "$STP/deployments" -type f 2>/dev/null | grep -E '.ear$|.war$' | awk -F'/' '{print $NF}' )
 	local ART=$( echo $ARTIFACT | awk -F'/' '{print $NF}' )
 	if [[ -n $( echo $DEPLOYED_ARTIFACTS | grep $ART ) ]]; then
-		echo Deploying "$ARTIFACT" to "$STP/deployments"
-		cp "$ARTIFACT" "$STP/deployments"
+		deploy "$ARTIFACT" "$STP/deployments"
 	fi
 }
-
 function changeStandaloneToEnv(){
 	local STANDALONE="$1"	
 	local ENV="$2"
