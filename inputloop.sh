@@ -35,7 +35,7 @@ function checkGits() {
 }
 function updateGits() {
 	echo "Checking git repositories, and updating"
-	for GITREPO in $( find "${WORKSPACE}" -name "*.git" | grep 'sol/.git$' )
+	for GITREPO in $( find "${WORKSPACE}" -name "*.git" )
 	do
 		echo checking $GITREPO
 		#Get outdated branches of $GITREPO
