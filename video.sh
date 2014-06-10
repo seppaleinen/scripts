@@ -23,7 +23,7 @@ function getImdbId() {
 	IMDBID="$( lynx -cfg=~/lynx.cfg "$URL" -source | xmllint --html --format - 2>/dev/null | grep 'fn_al_tt_1"' | awk -F'"result_text"' '{print $2}' | awk -F'"' '{print $2}' | awk -F'/title/' '{print $2}' | awk -F'/?' '{print $1}' )"
 	echo IMDBID: $IMDBID
 }
-function getSerieByImdb() {
+function getSerieByImdb(){
 	PARAM="$1"
 	URL="http://www.thetvdb.com/api/GetSeriesByRemoteID.php?imdbid=$PARAM"
 	curl -s "$URL" | xmllint --format - 
@@ -34,5 +34,5 @@ function getSerieId() {
 	ID=$( curl -s "$URL" | xmllint --format - | grep '<id>' | awk -F'<id>' '{print $2}' | awk -F'</id>' '{print $1}' )
 	echo INFO: $ID
 }
-getImdbId "$1"
+#getImdbId "$1"
 #getVideos

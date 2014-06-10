@@ -135,6 +135,28 @@ function getSTPAPPDIR() {
 	#Get running server info, and echo path-dir e.g. /opt/stpapp
 	echo $( ps -ef | grep 'jboss.server.base.dir' | grep -v grep | awk -F'jboss.server.base.dir=' '{print $2}' | grep -v 'print' | awk '{print $1}' )
 }
+function getGLASSFISHDIR(){
+	echo $( ps -ef | grep 'glassfish' | grep 'launchctl' | awk -F'instanceRoot=' '{print $2}' | awk '{print $1}' )
+}
+function getTOMCATDIR(){
+	echo $( ps -ef | grep 'catalina' | awk -F'-Dcatalina.home=' '{print $2}' | awk '{print $1}' )
+}
+function deployToTomcat(){
+	local ARTIFACT="$1"
+	local TOMCAT="$( getTOMCATDIR )"
+	if [[ -n "$ARTIFACT" && -n "$TOMCAT" ]]; then
+		echo "Deploying $ARTIFACT to $TOMCAT/webapps"
+		cp "$ARTIFACT" "$TOMCAT/webapps"
+	fi
+}
+function deployToGlassfish(){
+	local ARTIFACT="$1"
+	local GLASSFISH="$( getGLASSFISHDIR )"
+	if [[ -n "$ARTIFACT" && -n "$GLASSFISH" ]]; then
+		echo "Deploying $ARTIFACT to $GLASSFISH"
+		asadmin deploy --force "$ARTIFACT"
+	fi
+}
 function checkServerForArtifactsAndDeploy() {
 	local ARTIFACT="$1"
 	local STP="$( getSTPAPPDIR )"
