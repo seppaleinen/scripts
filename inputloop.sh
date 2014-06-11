@@ -157,7 +157,7 @@ function deploy(){
 	local ARTIFACT="$1"
 	local SERVER_DEPLOY_DIR="$2"
 	if [[ -n "$ARTIFACT" && -n "$SERVER_DEPLOY_DIR" ]]; then
-		if [[ -n "$( find $SERVER_DEPLOY_DIR -type d | grep '$SERVER_DEPLOY_DIR$' )" ]]; then
+		if [[ -n "$( find $SERVER_DEPLOY_DIR -type d | grep "$SERVER_DEPLOY_DIR\$" )" ]]; then
 			if [[ -n "$( find $ARTIFACT -type f )" ]]; then
 				echo "Deploying $ARTIFACT to $SERVER_DEPLOY_DIR"
 				cp "$ARTIFACT" "$SERVER_DEPLOY_DIR"
