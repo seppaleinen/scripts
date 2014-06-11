@@ -71,6 +71,7 @@ function inputloop() {
 	echo "3: Refresh artifacts deployed on running server"
 	echo "4: Change environment in standalone.xml"
 	echo "5: Deploy single artifact to running server"
+	echo "6: Check for uncommitted changes"
 
 	read INPUT
 	if [[ -z "$INPUT" ]]; then
@@ -94,6 +95,8 @@ function inputloop() {
 			echo "Enter name of artifact that you want to deploy e.g vara-ear"
 			read ARTIFACT
 			deployToJboss "$ARTIFACT"
+		;;
+		6) checkForUncommittedGitRepos
 		;;
 		esac
 		inputloop
@@ -152,6 +155,14 @@ function deployToGlassfish(){
 		echo "Deploying $ARTIFACT to $GLASSFISH"
 		asadmin deploy --force "$ARTIFACT"
 	fi
+}
+function checkForUncommittedGitRepos(){
+	for GITREPO in $( find ${WORKSPACE} -type d -name ".git" 2>/dev/null )
+	do
+		if [[ -n "$( gitCommand "$GITREPO" "status" "Changes not staged for commit" )" ]]; then
+			echo "Gitrepo $GITREPO has uncommitted changes"
+		fi
+	done
 }
 function deploy(){
 	local ARTIFACT="$1"
