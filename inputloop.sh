@@ -16,9 +16,9 @@ function gitCommand() {
 	local WORK_TREE="$( echo $GITREPO | sed 's/\.git//g' )"
 	local COMMAND="$2"
 	if [[ -n "$3" ]]; then
-		echo $( git --git-dir="$GIT_REPO" --work-tree="$WORK_TREE" $COMMAND 2>/dev/null | grep "$3" )
+		git --git-dir="$GIT_REPO" --work-tree="$WORK_TREE" $COMMAND 2>/dev/null | grep "$3"
 	else
-		echo $( git --git-dir="$GIT_REPO" --work-tree="$WORK_TREE" $COMMAND 2>/dev/null )
+		git --git-dir="$GIT_REPO" --work-tree="$WORK_TREE" $COMMAND 2>/dev/null
 	fi
 }
 function checkGits() {
