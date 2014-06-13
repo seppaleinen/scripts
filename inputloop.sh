@@ -72,6 +72,7 @@ function inputloop() {
 	echo "4: Change environment in standalone.xml"
 	echo "5: Deploy single artifact to running server"
 	echo "6: Check for uncommitted changes"
+	echo "7: Start server"
 
 	read INPUT
 	if [[ -z "$INPUT" ]]; then
@@ -98,8 +99,31 @@ function inputloop() {
 		;;
 		6) checkForUncommittedGitRepos
 		;;
+		7) startServer
+		;;
 		esac
 		inputloop
+	fi
+}
+function startServer(){
+	echo "-----------------------------------------"
+	echo "Which server would you like to start?"
+	echo "1: JBOSS"
+	echo "2: TOMCAT"
+	echo "3: GLASSFISH"
+	read INPUT
+	if [[ -n "$INPUT" ]]; then
+		case "$INPUT" in
+			1)
+				echo "Starting JBOSS"
+			;;
+			2)
+				echo "Starting TOMCAT"
+			;;
+			3)
+				echo "Starting GLASSFISH"
+			;;
+		esac
 	fi
 }
 function refreshServerArtifacts() {
