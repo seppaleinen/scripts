@@ -5,13 +5,20 @@ if [[ -z "${WORKSPACE}" ]]; then
 fi
 
 #FÖR GIT PÅ ENGELSKA
-OUT_OF_DATE='local out of date'
-ON_BRANCH='On branch'
-#FÖR GIT PÅ SVENSKA
-#OUT_OF_DATE=''
-#ON_BRANCH=''
+readonly OUT_OF_DATE='local out of date'
+readonly ON_BRANCH='On branch'
 
-function gitCommand() {
+#######################################
+# executes git command
+# Globals:
+# 	None
+# Arguments:
+#   GIT_REPO
+#	COMMAND
+# Returns:
+#   echo of git result
+#######################################
+function git_command() {
 	local GIT_REPO="$1"
 	local WORK_TREE="$( echo $GITREPO | sed 's/\.git//g' )"
 	local COMMAND="$2"
@@ -21,33 +28,51 @@ function gitCommand() {
 		git --git-dir="$GIT_REPO" --work-tree="$WORK_TREE" $COMMAND 2>/dev/null
 	fi
 }
-function checkGits() {
+#######################################
+# Check which git repos are outdated
+# Globals:
+#   WORKSPACE
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+function check_gits() {
 	echo "Checking git repositories"
-	for GITREPO in $( find $WORKSPACE -name "*.git" )
+	for GITREPO in $( find "${WORKSPACE}" -name "*.git" )
 	do
 		#Check branches for outdated repos
-		for BRANCH_OUT_OF_DATE in $( gitCommand "$GITREPO" "remote show origin" "$OUT_OF_DATE" | awk '{print $1}' )
+		for BRANCH_OUT_OF_DATE in $( git_command "$GITREPO" "remote show origin" "$OUT_OF_DATE" | awk '{print $1}' )
 		do
 			#If branch is outdated, echo result
-			[ -n "$BRANCH_OUT_OF_DATE" ] && echo "$BRANCH_OUT_OF_DATE in $GITREPO is out of date"
+			[[ -n "$BRANCH_OUT_OF_DATE" ]] && echo "$BRANCH_OUT_OF_DATE in $GITREPO is out of date"
 		done
 	done
 }
-function updateGits() {
+#######################################
+# Check which git repos are outdated, build and deploy if successful
+# Globals:
+#   WORKSPACE
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+function update_gits() {
 	echo "Checking git repositories, and updating"
 	for GITREPO in $( find "${WORKSPACE}" -name "*.git" )
 	do
 		echo checking $GITREPO
 		#Get outdated branches of $GITREPO
-		for BRANCH_OUT_OF_DATE in $( gitCommand "$GITREPO" "remote show origin" "$OUT_OF_DATE" | awk '{print $1}' )
+		for BRANCH_OUT_OF_DATE in $( git_command "$GITREPO" "remote show origin" "$OUT_OF_DATE" | awk '{print $1}' )
 		do
 			#Get current branch
-			local CURRENT_BRANCH=$( gitCommand "$GITREPO" "status" "$ON_BRANCH" | awk '{print $3}' )
+			local CURRENT_BRANCH=$( git_command "$GITREPO" "status" "$ON_BRANCH" | awk '{print $3}' )
 			local WORK_TREE=$( echo "$GITREPO" | sed -E 's/(.git)+$//' )
 			#If outdated branch != current branch, change branch to outdated
-			[ "$BRANCH_OUT_OF_DATE" != "$CURRENT_BRANCH" ] && gitCommand "$GITREPO" "checkout $BRANCH_OUT_OF_DATE"
+			[[ "$BRANCH_OUT_OF_DATE" != "$CURRENT_BRANCH" ]] && git_command "$GITREPO" "checkout $BRANCH_OUT_OF_DATE"
 			echo pulling $BRANCH_OUT_OF_DATE in $GITREPO
-			gitCommand "$GITREPO" "pull"
+			git_command "$GITREPO" "pull"
 			#Get path to top-level pom.xml
 			local POM_REPO=$( echo "$GITREPO" | sed -e 's/\.git/pom.xml/g' )
 			#Compile project and check for failure
@@ -55,14 +80,22 @@ function updateGits() {
 				echo maven failed
 			else
 				#Check if server is running, and if artifact is deployed, then deploy artifact to server
-				checkServerForArtifactsAndDeploy $( find "$( echo $GITREPO | sed 's/\.git//g' )" -type f | grep -E '.ear$|.war$' )
+				check_server_for_artifacts_and_deploy $( find "$( echo $GITREPO | sed 's/\.git//g' )" -type f | grep -E '.ear$|.war$' )
 			fi
 			#Change back to original branch if outdated branch != original branch
-			[ "$BRANCH_OUT_OF_DATE" != "$CURRENT_BRANCH" ] && gitCommand "$GITREPO" "checkout $CURRENT_BRANCH"
+			[[ "$BRANCH_OUT_OF_DATE" != "$CURRENT_BRANCH" ]] && git_command "$GITREPO" "checkout $CURRENT_BRANCH"
 		done
 	done
 }
-
+#######################################
+# Present choice of which function to call
+# Globals:
+#	None
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
 function inputloop() {
 	echo "-----------------------------------------"
 	echo "What would you like to do?: enter empty to exit"
@@ -79,33 +112,42 @@ function inputloop() {
 		echo -en "exiting"
 	else
 		case $INPUT in
-		1) checkGits
+		1) check_gits
 		;;
-		2) updateGits
+		2) update_gits
 		;;
-		3) refreshServerArtifacts
+		3) refresh_server_artifacts
 		;;
 		4)
 			echo "Which environment do you want to change to? e.g. INT8 or UTV1"
 			read ENV
 			echo "Write path to standalone.xml e.g. /opt/stpapp/configuration/standalone.xml"
 			read STANDALONE
-			changeStandaloneToEnv "$STANDALONE" "$ENV"
+			change_standalone_to_env "$STANDALONE" "$ENV"
 		;;
 		5)
 			echo "Enter name of artifact that you want to deploy e.g vara-ear"
 			read ARTIFACT
-			deployToJboss "$ARTIFACT"
+			deploy_to_jboss "$ARTIFACT"
 		;;
-		6) checkForUncommittedGitRepos
+		6) check_for_uncommitted_git_repos
 		;;
-		7) startServer
+		7) start_server
 		;;
 		esac
 		inputloop
 	fi
 }
-function startServer(){
+#######################################
+# Present choice of which server to start
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+function start_server(){
 	echo "-----------------------------------------"
 	echo "Which server would you like to start?"
 	echo "1: JBOSS"
@@ -126,20 +168,38 @@ function startServer(){
 		esac
 	fi
 }
-function refreshServerArtifacts() {
-	local STP=$( getSTPAPPDIR )
+#######################################
+# Check which artifacts are deployed on server, and redeploy
+# Globals:
+#   ORACLE_SID
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+function refresh_server_artifacts() {
+	local STP="$( get_jbossdir )"
 	local IFS=$'\n'
 	#Check running server's deployed artifacts
 	local DEPLOYED_ARTIFACTS=$( find "$STP/deployments" -type f 2>/dev/null | grep -E '.ear$|.war$' )
 	for DEPLOYED_ARTIFACT in $DEPLOYED_ARTIFACTS
 	do
 		#get artifact-name from path
-		deployToJboss "$( echo $DEPLOYED_ARTIFACT | awk -F'/' '{print $NF}' )"
+		deploy_to_jboss "$( echo $DEPLOYED_ARTIFACT | awk -F'/' '{print $NF}' )"
 	done
 }
-function deployToJboss() {
+#######################################
+# Deploy artifact to jboss
+# Globals:
+#   WORKSPACE
+# Arguments:
+#   ARTIFACT
+# Returns:
+#   None
+#######################################
+function deploy_to_jboss() {
 	#Get running server directory
-	local STP="$( getSTPAPPDIR )"
+	local STP="$( get_jbossdir )"
 	local ARTIFACT="$1"
 	#Check if $ARTIFACT is full artifact-name or short-version e.g. vara-ear
 	if [[ "$ARTIFACT" =~ ".ear" || "$ARTIFACT" =~ ".war" ]]; then
@@ -157,33 +217,33 @@ function deployToJboss() {
 		echo Could not find artifact "$ARTIFACT"	
 	fi
 }
-function getSTPAPPDIR() {
+function get_jbossdir() {
 	#Get running server info, and echo path-dir e.g. /opt/stpapp
 	echo $( ps -ef | grep 'jboss.server.base.dir' | grep -v grep | awk -F'jboss.server.base.dir=' '{print $2}' | grep -v 'print' | awk '{print $1}' )
 }
-function getGLASSFISHDIR(){
+function get_glassfishdir(){
 	echo $( ps -ef | grep 'glassfish' | grep 'launchctl' | awk -F'instanceRoot=' '{print $2}' | awk '{print $1}' )
 }
-function getTOMCATDIR(){
+function get_tomcatdir(){
 	echo $( ps -ef | grep 'catalina' | awk -F'-Dcatalina.home=' '{print $2}' | awk '{print $1}' )
 }
-function deployToTomcat(){
+function deploy_to_tomcat(){
 	local ARTIFACT="$1"
-	local TOMCAT="$( getTOMCATDIR )/webapps"
+	local TOMCAT="$( get_tomcatdir )/webapps"
 	deploy "$ARTIFACT" "$TOMCAT"
 }
-function deployToGlassfish(){
+function deploy_to_glassfish(){
 	local ARTIFACT="$1"
-	local GLASSFISH="$( getGLASSFISHDIR )"
+	local GLASSFISH="$( get_glassfishdir )"
 	if [[ -n "$ARTIFACT" && -n "$GLASSFISH" ]]; then
 		echo "Deploying $ARTIFACT to $GLASSFISH"
 		asadmin deploy --force "$ARTIFACT"
 	fi
 }
-function checkForUncommittedGitRepos(){
+function check_for_uncommitted_git_repos(){
 	for GITREPO in $( find ${WORKSPACE} -type d -name ".git" 2>/dev/null )
 	do
-		if [[ -n "$( gitCommand "$GITREPO" "status" "Changes not staged for commit" )" ]]; then
+		if [[ -n "$( git_command "$GITREPO" "status" "Changes not staged for commit" )" ]]; then
 			echo "Gitrepo $GITREPO has uncommitted changes"
 		fi
 	done
@@ -200,23 +260,23 @@ function deploy(){
 		fi
 	fi
 }
-function checkWhichRunningServerAndDeploy(){
+function check_which_running_server_and_deploy(){
 	local ARTIFACT="$1"
-	local GLASSFISH_SERVER="$( getGLASSFISHDIR )"
-	local TOMCAT_SERVER="$( getTOMCATDIR )"
-	local JBOSS_SERVER="$( getSTPAPPDIR )"
+	local GLASSFISH_SERVER="$( get_glassfishdir )"
+	local TOMCAT_SERVER="$( get_tomcatdir )"
+	local JBOSS_SERVER="$( get_jbossdir )"
 
-	[[ -n "$JBOSS_SERVER" ]] && deployToJboss "$ARTIFACT"
-	[[ -n "$GLASSFISH_SERVER" ]] && deployToGlassfish "$ARTIFACT"
-	[[ -n "$TOMCAT_SERVER" ]] && deployToTomcat "$ARTIFACT"
+	[[ -n "$JBOSS_SERVER" ]] && deploy_to_jboss "$ARTIFACT"
+	[[ -n "$GLASSFISH_SERVER" ]] && deploy_to_glassfish "$ARTIFACT"
+	[[ -n "$TOMCAT_SERVER" ]] && deploy_to_tomcat "$ARTIFACT"
 
 	if [[ -z "$JBOSS_SERVER" && "$GLASSFISH_SERVER" && -z "$TOMCAT_SERVER" ]]; then
 		echo "No running servers."
 	fi
 }
-function checkServerForArtifactsAndDeploy() {
+function check_server_for_artifacts_and_deploy() {
 	local ARTIFACT="$1"
-	local STP="$( getSTPAPPDIR )"
+	local STP="$( get_jbossdir )"
 	local IFS=$'\n'
 	#Get deployed artifact-names from running server
 	local DEPLOYED_ARTIFACTS=$( find "$STP/deployments" -type f 2>/dev/null | grep -E '.ear$|.war$' | awk -F'/' '{print $NF}' )
@@ -225,7 +285,17 @@ function checkServerForArtifactsAndDeploy() {
 		deploy "$ARTIFACT" "$STP/deployments"
 	fi
 }
-function changeStandaloneToEnv(){
+#######################################
+# Change jboss standalone.xml config to environment value
+# Globals:
+#   None
+# Arguments:
+#   STANDALONE
+#	ENV
+# Returns:
+#   None
+#######################################
+function change_standalone_to_env(){
 	local STANDALONE="$1"	
 	local ENV="$2"
 	#Check that $STANDALONE && $ENV is not empty and $STANDALONE is existing file
