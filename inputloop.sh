@@ -153,17 +153,26 @@ function start_server(){
 	echo "1: JBOSS"
 	echo "2: TOMCAT"
 	echo "3: GLASSFISH"
-	read INPUT
+    read INPUT
 	if [[ -n "$INPUT" ]]; then
 		case "$INPUT" in
 			1)
-				echo "Starting JBOSS"
+			  echo "Enter path to jboss"
+			  read JBOSS_DIR
+			  local STPAPP=$( find $JBOSS_DIR -type f -name stpapp.sh 2>/dev/null ) 
+			  $STPAPP
 			;;
-			2)
-				echo "Starting TOMCAT"
+			2) 
+			  echo "Enter path to tomcat"
+			  read TOMCAT_DIR
+			  local STARTUP="$( find $TOMCAT_DIR -type f -name startup.sh 2>/dev/null )"
+			  [[ -n "$STARTUP" ]] && $STARTUP || echo "Could not find startup file"
 			;;
 			3)
-				echo "Starting GLASSFISH"
+			  echo "Enter path to glassfish"
+			  read GLASSFISH_DIR
+			  local STARTSERV="$( find $GLASSFISH_DIR -type f -name startserv 2>/dev/null )"
+			  [[ -n "$STARTSERV" ]] && $STARTSERV || echo "Could not find startserv file"
 			;;
 		esac
 	fi
