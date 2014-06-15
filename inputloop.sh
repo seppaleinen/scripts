@@ -237,13 +237,25 @@ function deploy_to_jboss() {
 }
 function get_jbossdir() {
   #Get running server info, and echo path-dir e.g. /opt/stpapp
-  echo $( ps -ef | grep 'jboss.server.base.dir' | grep -v grep | awk -F'jboss.server.base.dir=' '{print $2}' | grep -v 'print' | awk '{print $1}' )
+  echo "$( ps -ef | \
+   grep 'jboss.server.base.dir' | \
+   grep -v grep | \
+   awk -F'jboss.server.base.dir=' '{print $2}' | \
+   grep -v 'print' | \
+   awk '{print $1}' )"
 }
 function get_glassfishdir(){
-  echo $( ps -ef | grep 'glassfish' | grep 'launchctl' | awk -F'instanceRoot=' '{print $2}' | awk '{print $1}' )
+  echo "$( ps -ef | \
+  	grep 'glassfish' | \
+  	grep 'launchctl' | \
+  	awk -F'instanceRoot=' '{print $2}' | \
+  	awk '{print $1}' )"
 }
 function get_tomcatdir(){
-  echo $( ps -ef | grep 'catalina' | awk -F'-Dcatalina.home=' '{print $2}' | awk '{print $1}' )
+  echo "$( ps -ef | \
+  	grep 'catalina' | \
+  	awk -F'-Dcatalina.home=' '{print $2}' | \
+  	awk '{print $1}' )"
 }
 function deploy_to_tomcat(){
   local ARTIFACT="$1"
