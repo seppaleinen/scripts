@@ -207,92 +207,6 @@ function refresh_server_artifacts() {
   done
 }
 #######################################
-# Deploy artifact to jboss
-# Globals:
-#   WORKSPACE
-# Arguments:
-#   ARTIFACT
-# Returns:
-#   None
-#######################################
-function deploy_to_jboss() {
-  #Get running server directory
-  local STP="$( get_jbossdir )"
-  local ARTIFACT="$1"
-  #Check if $ARTIFACT is full artifact-name or short-version e.g. vara-ear
-  if [[ "$ARTIFACT" =~ ".ear" || "$ARTIFACT" =~ ".war" ]]; then
-    local FOUND_ARTIFACTS=$( find "${WORKSPACE}" -type f -name "$ARTIFACT" 2>/dev/null )
-  else
-	local FOUND_ARTIFACTS=$( find "${WORKSPACE}" -type f -name "$ARTIFACT*.war" -o -name "$ARTIFACT*.ear" 2>/dev/null )
-  fi
-
-  for FOUND_ARTIFACT in $FOUND_ARTIFACTS
-  do
-	deploy "$FOUND_ARTIFACT" "$STP/deployments"
-  done
-
-  if [[ -z "$FOUND_ARTIFACTS" ]]; then
-    echo Could not find artifact "$ARTIFACT"	
-  fi
-}
-function get_jbossdir() {
-  #Get running server info, and echo path-dir e.g. /opt/stpapp
-  echo "$( ps -ef | \
-   grep 'jboss.server.base.dir' | \
-   grep -v grep | \
-   awk -F'jboss.server.base.dir=' '{print $2}' | \
-   grep -v 'print' | \
-   awk '{print $1}' )"
-}
-function get_glassfishdir(){
-  echo "$( ps -ef | \
-  	grep 'glassfish' | \
-  	grep 'launchctl' | \
-  	awk -F'instanceRoot=' '{print $2}' | \
-  	awk '{print $1}' )"
-}
-function get_tomcatdir(){
-  echo "$( ps -ef | \
-  	grep 'catalina' | \
-  	awk -F'-Dcatalina.home=' '{print $2}' | \
-  	awk '{print $1}' )"
-}
-function deploy_to_tomcat(){
-  local ARTIFACT="$1"
-  local TOMCAT="$( get_tomcatdir )/webapps"
-  deploy "$ARTIFACT" "$TOMCAT"
-}
-function deploy_to_glassfish(){
-  local ARTIFACT="$1"
-  local GLASSFISH="$( get_glassfishdir )"
-  if [[ -n "$ARTIFACT" && -n "$GLASSFISH" ]]; then
-    echo "Deploying $ARTIFACT to $GLASSFISH"
-	asadmin deploy --force "$ARTIFACT"
-  fi
-}
-#######################################
-# Deploy artifact to deploy dir
-# Globals:
-#   None
-# Arguments:
-#   ARTIFACT
-#	SERVER_DEPLOY_DIR
-# Returns:
-#   None
-#######################################
-function deploy(){
-  local ARTIFACT="$1"
-  local SERVER_DEPLOY_DIR="$2"
-  if [[ -n "$ARTIFACT" && -n "$SERVER_DEPLOY_DIR" ]]; then
-	if [[ -n "$( find $SERVER_DEPLOY_DIR -type d | grep "$SERVER_DEPLOY_DIR\$" )" ]]; then
-	  if [[ -n "$( find $ARTIFACT -type f )" ]]; then
-		echo "Deploying $ARTIFACT to $SERVER_DEPLOY_DIR"
-		cp "$ARTIFACT" "$SERVER_DEPLOY_DIR"
-	  fi
-	fi
-  fi
-}
-#######################################
 # Change jboss standalone.xml config to environment value
 # Globals:
 #   None
@@ -327,12 +241,14 @@ function check_which_running_server_and_deploy(){
 function check_server_for_artifacts_and_deploy() {
   local ARTIFACT="$1"
   local STP="$( get_jbossdir )"
-  local IFS=$'\n'
-  #Get deployed artifact-names from running server
-  local DEPLOYED_ARTIFACTS=$( find "$STP/deployments" -type f 2>/dev/null | grep -E '.ear$|.war$' | awk -F'/' '{print $NF}' )
-  local ART=$( echo $ARTIFACT | awk -F'/' '{print $NF}' )
-  if [[ -n $( echo $DEPLOYED_ARTIFACTS | grep $ART ) ]]; then
-    deploy "$ARTIFACT" "$STP/deployments"
+  if [[ -n "$STP" ]]; then
+  	local IFS=$'\n'
+    #Get deployed artifact-names from running server
+    local DEPLOYED_ARTIFACTS=$( find "$STP/deployments" -type f 2>/dev/null | grep -E '.ear$|.war$' | awk -F'/' '{print $NF}' )
+    local ART=$( echo $ARTIFACT | awk -F'/' '{print $NF}' )
+    if [[ -n $( echo $DEPLOYED_ARTIFACTS | grep $ART ) ]]; then
+      deploy "$ARTIFACT" "$STP/deployments"
+  	fi
   fi
 }
 #######################################
@@ -376,6 +292,92 @@ function change_standalone_to_env(){
 	fi
   else
     echo "Either path or environment variable is empty or path is not valid"
+  fi
+}
+function get_jbossdir() {
+  #Get running server info, and echo path-dir e.g. /opt/stpapp
+  echo "$( ps -ef | \
+   grep 'jboss.server.base.dir' | \
+   grep -v grep | \
+   awk -F'jboss.server.base.dir=' '{print $2}' | \
+   grep -v 'print' | \
+   awk '{print $1}' )"
+}
+function get_glassfishdir(){
+  echo "$( ps -ef | \
+  	grep 'glassfish' | \
+  	grep 'launchctl' | \
+  	awk -F'instanceRoot=' '{print $2}' | \
+  	awk '{print $1}' )"
+}
+function get_tomcatdir(){
+  echo "$( ps -ef | \
+  	grep 'catalina' | \
+  	awk -F'-Dcatalina.home=' '{print $2}' | \
+  	awk '{print $1}' )"
+}
+function deploy_to_tomcat(){
+  local ARTIFACT="$1"
+  local TOMCAT="$( get_tomcatdir )/webapps"
+  deploy "$ARTIFACT" "$TOMCAT"
+}
+function deploy_to_glassfish(){
+  local ARTIFACT="$1"
+  local GLASSFISH="$( get_glassfishdir )"
+  if [[ -n "$ARTIFACT" && -n "$GLASSFISH" ]]; then
+    echo "Deploying $ARTIFACT to $GLASSFISH"
+	asadmin deploy --force "$ARTIFACT"
+  fi
+}
+#######################################
+# Deploy artifact to jboss
+# Globals:
+#   WORKSPACE
+# Arguments:
+#   ARTIFACT
+# Returns:
+#   None
+#######################################
+function deploy_to_jboss() {
+  #Get running server directory
+  local STP="$( get_jbossdir )"
+  local ARTIFACT="$1"
+  #Check if $ARTIFACT is full artifact-name or short-version e.g. vara-ear
+  if [[ "$ARTIFACT" =~ ".ear" || "$ARTIFACT" =~ ".war" ]]; then
+    local FOUND_ARTIFACTS=$( find "${WORKSPACE}" -type f -name "$ARTIFACT" 2>/dev/null )
+  else
+  local FOUND_ARTIFACTS=$( find "${WORKSPACE}" -type f -name "$ARTIFACT*.war" -o -name "$ARTIFACT*.ear" 2>/dev/null )
+  fi
+
+  for FOUND_ARTIFACT in $FOUND_ARTIFACTS
+  do
+  deploy "$FOUND_ARTIFACT" "$STP/deployments"
+  done
+
+  if [[ -z "$FOUND_ARTIFACTS" ]]; then
+    echo Could not find artifact "$ARTIFACT"  
+  fi
+}
+#######################################
+# Deploy artifact to deploy dir
+# Globals:
+#   None
+# Arguments:
+#   ARTIFACT
+# SERVER_DEPLOY_DIR
+# Returns:
+#   None
+#######################################
+function deploy(){
+  local ARTIFACT="$1"
+  local SERVER_DEPLOY_DIR="$2"
+  if [[ -n "$ARTIFACT" && -n "$SERVER_DEPLOY_DIR" ]]; then
+  if [[ -n "$( find $SERVER_DEPLOY_DIR -type d | grep "$SERVER_DEPLOY_DIR\$" )" ]]; then
+    if [[ -n "$( find $ARTIFACT -type f )" ]]; then
+    echo "Deploying $ARTIFACT to $SERVER_DEPLOY_DIR"
+    cp "$ARTIFACT" "$SERVER_DEPLOY_DIR"
+    fi
+  fi
   fi
 }
 
