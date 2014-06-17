@@ -249,6 +249,8 @@ function check_server_for_artifacts_and_deploy() {
     if [[ -n $( echo $DEPLOYED_ARTIFACTS | grep $ART ) ]]; then
       deploy "$ARTIFACT" "$STP/deployments"
   	fi
+  else
+  	echo "JBOSS server not running"
   fi
 }
 #######################################
