@@ -114,6 +114,7 @@ function inputloop() {
   echo "5: Deploy single artifact to running server"
   echo "6: Check for uncommitted changes"
   echo "7: Start server"
+  echo "8: Kill server"
 
   read INPUT
   if [[ -z "$INPUT" ]]; then
@@ -142,6 +143,7 @@ function inputloop() {
 	  ;;
 	  7) start_server
 	  ;;
+	  8) kill_server
 	esac
 	inputloop
   fi
@@ -173,6 +175,7 @@ function start_server(){
 	  2) 
 		echo "Enter path to tomcat"
 		read TOMCAT_DIR
+		export TOMCAT_DIR=$TOMCAT_DIR
 	    local STARTUP="$( find "$TOMCAT_DIR" -type f -name "startup.sh" 2>/dev/null )"
 	    [[ -n "$STARTUP" ]] && $STARTUP || echo "Could not find startup file"
 	  ;;
@@ -181,6 +184,24 @@ function start_server(){
 	    read GLASSFISH_DIR
 		local STARTSERV="$( find "$GLASSFISH_DIR" -type f -name "startserv" 2>/dev/null )"
 	    [[ -n "$STARTSERV" ]] && $STARTSERV || echo "Could not find startserv file"
+	  ;;
+	esac
+  fi
+}
+function kill_server(){
+  echo "-----------------------------------------"
+  echo "Which server would you like to stop?"
+  echo "1: JBOSS"
+  echo "2: TOMCAT"
+  echo "3: GLASSFISH"
+  read INPUT
+  if [[ -n "$INPUT" ]]; then
+    case "$INPUT" in
+	  1) kill_jboss
+	  ;;
+	  2) kill_tomcat
+	  ;;
+	  3)
 	  ;;
 	esac
   fi
@@ -381,6 +402,28 @@ function deploy(){
     fi
   fi
   fi
+}
+function kill_jboss(){
+	local JBOSS_PID="$( ps -ef | grep jboss | grep -v grep | awk '{print $2}' )"
+	if [[ -n "JBOSS_PID" ]]; then
+		kill -9 "$JBOSS_PID"
+	else
+		echo "Server is not running"
+	fi
+}
+function kill_tomcat(){
+	local TOMCAT_DIR="${TOMCAT_DIR}"
+	if [[ -n "$TOMCAT_DIR" ]]; then
+		local SHUTDOWNSCRIPT=$( find $INPUT -type f -name shutdown.sh 2>/dev/null )
+		$SHUTDOWNSCRIPT
+	else
+		echo "Enter path to tomcat directory"
+		read INPUT
+		if [[ -n $INPUT ]]; then
+			local SHUTDOWNSCRIPT=$( find $INPUT -type f -name shutdown.sh 2>/dev/null )
+			$SHUTDOWNSCRIPT
+		fi
+	fi
 }
 
 inputloop
