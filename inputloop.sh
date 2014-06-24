@@ -80,7 +80,8 @@ function update_gits() {
 	    echo maven failed
 	  else
 	    #Check if server is running, and if artifact is deployed, then deploy artifact to server
-		check_server_for_artifacts_and_deploy $( find "$( echo $GITREPO | sed 's/\.git//g' )" -type f | grep -E '.ear$|.war$' )
+		check_server_for_artifacts_and_deploy $( find "$( echo $GITREPO | \
+			sed 's/\.git//g' )" -type f | grep -E '.ear$|.war$' )
 	  fi
 	  #Change back to original branch if outdated branch != original branch
 	  [[ "$BRANCH_OUT_OF_DATE" != "$CURRENT_BRANCH" ]] && git_command "$GITREPO" "checkout $CURRENT_BRANCH"
@@ -296,7 +297,8 @@ function change_standalone_to_env(){
 	  "UTV6" | "UTV7" | "UTV8" | "UTV9" | "UTV10")
 		local HOSTENV='usb2ud04.systest.receptpartner.se'
 	  ;;
-	  "INT1" | "INT2" | "INT3" | "INT4" | "INT5" | "INT6" | "INT7" | "INT8" | "INT9" | "INT10" | "INT11" | "INT12")
+	  "INT1" | "INT2" | "INT3" | "INT4" | "INT5" | "INT6" | \
+	  "INT7" | "INT8" | "INT9" | "INT10" | "INT11" | "INT12")
 		local HOSTENV='td01-scan.systest.receptpartner.se'
 	  ;;
 	  "XE")
@@ -308,7 +310,8 @@ function change_standalone_to_env(){
 	esac
 	#change SERVICE_NAME = ? to $ENV and HOST = ? to $HOSTENV if $HOSTENV is not empty
 	if [[ -n "$HOSTENV" ]]; then
-	  sed -i -e "s/SERVICE_NAME = \w\{2,4\}/SERVICE_NAME = $ENV/g" -e "s/HOST = [a-zA-Z0-9.-]\{4,200\}/HOST = $HOSTENV/g" "$STANDALONE"
+	  sed -i -e "s/SERVICE_NAME = \w\{2,4\}/SERVICE_NAME = $ENV/g" \
+	    -e "s/HOST = [a-zA-Z0-9.-]\{4,200\}/HOST = $HOSTENV/g" "$STANDALONE"
 	  echo "Changed host to $HOSTENV and servicename to $ENV in $STANDALONE"
 	else
 	  echo "Environment variable is not valid"
@@ -369,12 +372,12 @@ function deploy_to_jboss() {
   if [[ "$ARTIFACT" =~ ".ear" || "$ARTIFACT" =~ ".war" ]]; then
     local FOUND_ARTIFACTS=$( find "${WORKSPACE}" -type f -name "$ARTIFACT" 2>/dev/null )
   else
-  local FOUND_ARTIFACTS=$( find "${WORKSPACE}" -type f -name "$ARTIFACT*.war" -o -name "$ARTIFACT*.ear" 2>/dev/null )
+    local FOUND_ARTIFACTS=$( find "${WORKSPACE}" -type f -name "$ARTIFACT*.war" -o -name "$ARTIFACT*.ear" 2>/dev/null )
   fi
 
   for FOUND_ARTIFACT in $FOUND_ARTIFACTS
   do
-  deploy "$FOUND_ARTIFACT" "$STP/deployments"
+    deploy "$FOUND_ARTIFACT" "$STP/deployments"
   done
 
   if [[ -z "$FOUND_ARTIFACTS" ]]; then
@@ -382,7 +385,7 @@ function deploy_to_jboss() {
   fi
 }
 #######################################
-# Deploy artifact to deploy dir
+# Deploy ARTIFACT to SERVER_DEPLOY_DIR
 # Globals:
 #   None
 # Arguments:
@@ -395,35 +398,35 @@ function deploy(){
   local ARTIFACT="$1"
   local SERVER_DEPLOY_DIR="$2"
   if [[ -n "$ARTIFACT" && -n "$SERVER_DEPLOY_DIR" ]]; then
-  if [[ -n "$( find $SERVER_DEPLOY_DIR -type d | grep "$SERVER_DEPLOY_DIR\$" )" ]]; then
-    if [[ -n "$( find $ARTIFACT -type f )" ]]; then
-    echo "Deploying $ARTIFACT to $SERVER_DEPLOY_DIR"
-    cp "$ARTIFACT" "$SERVER_DEPLOY_DIR"
+    if [[ -n "$( find $SERVER_DEPLOY_DIR -type d | grep "$SERVER_DEPLOY_DIR\$" )" ]]; then
+      if [[ -n "$( find $ARTIFACT -type f )" ]]; then
+      echo "Deploying $ARTIFACT to $SERVER_DEPLOY_DIR"
+      cp "$ARTIFACT" "$SERVER_DEPLOY_DIR"
+      fi
     fi
-  fi
   fi
 }
 function kill_jboss(){
-	local JBOSS_PID="$( ps -ef | grep jboss | grep -v grep | awk '{print $2}' )"
-	if [[ -n "JBOSS_PID" ]]; then
-		kill -9 "$JBOSS_PID"
-	else
-		echo "Server is not running"
-	fi
+  local JBOSS_PID="$( ps -ef | grep jboss | grep -v grep | awk '{print $2}' )"
+  if [[ -n "JBOSS_PID" ]]; then
+    kill -9 "$JBOSS_PID"
+  else
+	echo "Server is not running"
+  fi
 }
 function kill_tomcat(){
-	local TOMCAT_DIR="${TOMCAT_DIR}"
-	if [[ -n "$TOMCAT_DIR" ]]; then
-		local SHUTDOWNSCRIPT=$( find $INPUT -type f -name shutdown.sh 2>/dev/null )
-		$SHUTDOWNSCRIPT
-	else
-		echo "Enter path to tomcat directory"
-		read INPUT
-		if [[ -n $INPUT ]]; then
-			local SHUTDOWNSCRIPT=$( find $INPUT -type f -name shutdown.sh 2>/dev/null )
-			$SHUTDOWNSCRIPT
-		fi
+  local TOMCAT_DIR="${TOMCAT_DIR}"
+  if [[ -n "$TOMCAT_DIR" ]]; then
+	local SHUTDOWNSCRIPT=$( find $INPUT -type f -name shutdown.sh 2>/dev/null )
+  	$SHUTDOWNSCRIPT
+  else
+	echo "Enter path to tomcat directory"
+	read INPUT
+	if [[ -n "$INPUT" ]]; then
+	  local SHUTDOWNSCRIPT=$( find "$INPUT" -type f -name shutdown.sh 2>/dev/null )
+	  $SHUTDOWNSCRIPT
 	fi
+  fi
 }
 
 inputloop
