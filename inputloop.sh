@@ -116,6 +116,7 @@ function inputloop() {
   echo "6: Check for uncommitted changes"
   echo "7: Start server"
   echo "8: Kill server"
+  echo "9: Check for outdated versions"
 
   read INPUT
   if [[ -z "$INPUT" ]]; then
@@ -145,6 +146,9 @@ function inputloop() {
 	  7) start_server
 	  ;;
 	  8) kill_server
+    ;;
+    9) checkServerForOutdatedVersions
+    ;;
 	esac
 	inputloop
   fi
@@ -427,6 +431,10 @@ function kill_tomcat(){
 	  $SHUTDOWNSCRIPT
 	fi
   fi
+}
+function checkServerForOutdatedVersions(){
+  local HTML=$( wget -qO- 'http://vioxx/ssi2/versions.html' | less )
+  echo "Funkar inte än"  
 }
 
 inputloop
