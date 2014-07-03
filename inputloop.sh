@@ -433,8 +433,19 @@ function kill_tomcat(){
   fi
 }
 function checkServerForOutdatedVersions(){
-  local HTML=$( wget -qO- 'http://vioxx/ssi2/versions.html' | less )
-  echo "Funkar inte än"  
+  local TMPFILE="./tmp.file"
+  wget -qO- 'http://vioxx/ssi2/versions.html' > "$TMPFILE"
+  local START_AND_ENDINDEX_OF_SELECT=$( less "$TMPFILE" | grep -En '<select name=|</select>' | awk -F':' '{print $1}' )
+  local MIN_VALUE=$( echo $START_AND_ENDINDEX_OF_SELECT | awk '{print $1}' )
+  local MAX_VALUE=$( echo $START_AND_ENDINDEX_OF_SELECT | awk '{print $2}' )
+  ARRAY=()
+  while [ $MIN_VALUE -lt $(( $MAX_VALUE - 1 )) ]
+  do
+    MIN_VALUE=$(( $MIN_VALUE + 1 ))
+    local ROW=$( less "$TMPFILE" | sed -n ${MIN_VALUE}p | awk -F'>' '{print $2}' | awk -F'<' '{print $1}' )
+    ARRAY+=$ROW
+  done
+  rm -rf "$TMPFILE"
 }
 
 inputloop
