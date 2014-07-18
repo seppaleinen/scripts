@@ -308,6 +308,9 @@ function change_standalone_to_env(){
 	  "XE")
 		local HOSTENV='localhost'
 	  ;;
+    "CI1" | "CI2" | "CI3" | "CI4" | "CI5" | "CI6")
+    local HOSTENV='usb2ud04.systest.receptpartner.se'
+    ;;
 	  *)
 	    local HOSTENV=''
 	  ;;
