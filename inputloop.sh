@@ -451,5 +451,6 @@ function checkServerForOutdatedVersions(){
   rm -rf "$TMPFILE"
 }
 #echo "jdbc@hej.com/hoj</hej>" | sed 's_@[a-zA-Z./]*_@REPLACEMENT_g'
+#sed -i '' 's_@[a-zA-z0-9./]*_@REPLACEMENT_g' hej.xml
 
 inputloop
