@@ -450,5 +450,6 @@ function checkServerForOutdatedVersions(){
   done
   rm -rf "$TMPFILE"
 }
+#echo "jdbc@hej.com/hoj</hej>" | sed 's_@[a-zA-Z./]*_@REPLACEMENT_g'
 
 inputloop
