@@ -117,6 +117,7 @@ function inputloop() {
   echo "7: Start server"
   echo "8: Kill server"
   echo "9: Check for outdated versions"
+  echo "99: Run soaptests"
 
   read INPUT
   if [[ -z "$INPUT" ]]; then
@@ -148,6 +149,8 @@ function inputloop() {
 	  8) kill_server
     ;;
     9) checkServerForOutdatedVersions
+    ;;
+    99) runSoapTests
     ;;
 	esac
 	inputloop
@@ -451,6 +454,43 @@ function checkServerForOutdatedVersions(){
   rm -rf "$TMPFILE"
 }
 #echo "jdbc@hej.com/hoj</hej>" | sed 's_@[a-zA-Z./]*_@REPLACEMENT_g'
-#sed -i '' 's_@[a-zA-z0-9./]*_@REPLACEMENT_g' hej.xml
+#sed -i '' 's_@[a-zA-Z0-9./]*_@REPLACEMENT_g' hej.xml
+
+function runSoapTests(){
+  echo "Which project?"
+  read PROJECT
+  local PROJECTDIR=$( find "$WORKSPACE" -type d -wholename "*$PROJECT/.git" 2>/dev/null | sed 's/\.git//g' )
+  local TEST_FILES=$( find "$PROJECTDIR" -type f -wholename "*$PROJECT-soapui*/resources/regressionstest*" 2>/dev/null | grep '.xml$' )
+
+  local RUNNING_JBOSS_DIR="$( get_jbossdir )"
+  local JDBC_CONFIG="$( less "$RUNNING_JBOSS_DIR/configuration/standalone.xml" | grep 'jdbc:' | head -1 )"
+  local HOST="$( echo $JDBC_CONFIG | awk -F'HOST = ' '{print $2}' | awk -F')' '{print $1}' )"
+  local SERVICE="$( echo $JDBC_CONFIG | awk -F'SERVICE_NAME = ' '{print $2}' | awk -F')' '{print $1}' )"
+  local TESTRESULT="$WORKSPACE/tmpsoapresult.txt"
+  local SOAPFILE="$WORKSPACE/tmpsoaptest.xml"
+
+  rm -f "$TESTRESULT"
+  touch "$TESTRESULT"
+
+  for TEST_FILE in $TEST_FILES
+  do
+    cp "$TEST_FILE" "$SOAPFILE"
+
+    if [[ -n $( less "$SOAPFILE" | xmllint --format - | grep 'jdbc:' ) ]]; then
+      #Change jdbc: configurations to that of the servers ex. td01-scan.systest.receptpartner.se/INT8
+      sed -i 's_@[a-zA-Z0-9./:-]*</con:value>_@'$HOST/$SERVICE'</con:value>_g' "$SOAPFILE"
+      #Change serviceEndpoint to localhost
+      sed -i 's_<con:value>http://[a-zA-Z0-9.-]\{12,40\}:[0-9]\{5,5\}</con:value>_<con:value>http://localhost:20080</con:value>_g' "$SOAPFILE"
+      #Change USER_LOGGING path to WORKSPACE/tmplog
+      sed -i 's?<con:name>USER_LOGGING</con:name><con:value>[a-zA-Z0-9./\_-]*</con:value>?<con:name>USER_LOGGING</con:name><con:value>'$WORKSPACE/tmplog'</con:value>?g' "$SOAPFILE"
+
+      #less "$WORKSPACE/tmpsoaptest.xml" | xmllint --format - | grep 'localhost:20080'
+    fi
+
+    sh $SOAPUI_HOME/bin/testrunner.sh -r "$SOAPFILE" >> "$TESTRESULT"
+
+    rm -f "$SOAPFILE"
+  done
+}
 
 inputloop
