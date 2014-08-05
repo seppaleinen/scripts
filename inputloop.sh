@@ -133,7 +133,7 @@ function inputloop() {
 	  4)
 	    echo "Which environment do you want to change to? e.g. INT8 or UTV1"
 		read ENV
-		echo "Write path to standalone.xml e.g. /opt/stpapp/configuration/standalone.xml"
+		echo "Write path to stpapp e.g. /opt/stpappOr"
 		read STANDALONE
 		change_standalone_to_env "$STANDALONE" "$ENV"
 	  ;;
@@ -293,7 +293,8 @@ function check_server_for_artifacts_and_deploy() {
 #   None
 #######################################
 function change_standalone_to_env(){
-  local STANDALONE="$1"	
+  local PATH_TO_STPAPP="$1"
+  local STANDALONE="$PATH_TO_STPAPP/configuration/standalone.xml"	
   local ENV="$2"
   #Check that $STANDALONE && $ENV is not empty and $STANDALONE is existing file
   if [[ -n "$STANDALONE" && -n "$ENV" && -n "$( find "$STANDALONE" -type f 2>/dev/null )" ]]; then
