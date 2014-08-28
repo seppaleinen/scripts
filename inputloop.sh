@@ -477,7 +477,20 @@ function runSoapTests(){
   do
     cp "$TEST_FILE" "$SOAPFILE"
 
-    if [[ -n $( less "$SOAPFILE" | xmllint --format - | grep 'jdbc:' ) ]]; then
+    setSoapTestToEnv "$SOAPFILE" "$HOST" "$SERVICE"
+
+    sh $SOAPUI_HOME/bin/testrunner.sh -r "$SOAPFILE" >> "$TESTRESULT"
+
+    rm -f "$SOAPFILE"
+  done
+}
+
+function setSoapTestToEnv() {
+  local SOAPFILE="$1"
+  local HOST="$2"
+  local SERVICE="$3"
+
+  if [[ -n $( less "$SOAPFILE" | xmllint --format - | grep 'jdbc:' ) ]]; then
       #Change jdbc: configurations to that of the servers ex. td01-scan.systest.receptpartner.se/INT8
       sed -i 's_@[a-zA-Z0-9./:-]*</con:value>_@'$HOST/$SERVICE'</con:value>_g' "$SOAPFILE"
       #Change serviceEndpoint to localhost
@@ -486,12 +499,24 @@ function runSoapTests(){
       sed -i 's?<con:name>USER_LOGGING</con:name><con:value>[a-zA-Z0-9./\_-]*</con:value>?<con:name>USER_LOGGING</con:name><con:value>'$WORKSPACE/tmplog'</con:value>?g' "$SOAPFILE"
 
       #less "$WORKSPACE/tmpsoaptest.xml" | xmllint --format - | grep 'localhost:20080'
-    fi
+  fi
+}
 
-    sh $SOAPUI_HOME/bin/testrunner.sh -r "$SOAPFILE" >> "$TESTRESULT"
+function rebuildDatabase() {
+  local URL="$1"
+  local USERNAME="$2"
+  local PASSWORD="$3"
+  local CONTEXT="$4"
 
-    rm -f "$SOAPFILE"
-  done
+  java -jar -Duser.country=SE "$SOAPUI_HOME/bin/ext/liquibase.jar" \
+                      --classpath="$SOAPUI_HOME/bin/ext/ojdbc6.jar" \
+                      --url="$URL" \
+                      --username="$USERNAME" \
+                      --password="$PASSWORD" \
+                      --contexts="$CONTEXT" \
+                      --changeLogFile="updateTestdata.xml" \
+                      --driver="oracle.jdbc.OracleDriver" update
+
 }
 
 inputloop
