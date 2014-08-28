@@ -112,7 +112,9 @@ function inputloop() {
   echo "2: Update, build and deploy all outdated gitrepos"
   echo "3: Refresh artifacts deployed on running server"
   echo "4: Change environment in standalone.xml"
+  echo "44: Set soaptest parameters to local"
   echo "5: Deploy single artifact to running server"
+  echo "55: redeploy database testdata"
   echo "6: Check for uncommitted changes"
   echo "7: Start server"
   echo "8: Kill server"
@@ -137,11 +139,15 @@ function inputloop() {
 		read STANDALONE
 		change_standalone_to_env "$STANDALONE" "$ENV"
 	  ;;
+    44) setSoapEnv
+    ;;
 	  5)
 	    echo "Enter name of artifact that you want to deploy e.g vara-ear"
 		read ARTIFACT
 		deploy_to_jboss "$ARTIFACT"
 	  ;;
+    55) rebuildDatabase
+    ;;
 	  6) check_for_uncommitted_git_repos
 	  ;;
 	  7) start_server
@@ -282,6 +288,31 @@ function check_server_for_artifacts_and_deploy() {
   	echo "JBOSS server not running"
   fi
 }
+function getEnvURL() {
+  local ENV="$1"
+  case "$ENV" in
+    "UTV1" | "UTV2" | "UTV3" | "UTV4" | "UTV5")
+    local HOSTENV='usb2ud03.systest.receptpartner.se'
+    ;;
+    "UTV6" | "UTV7" | "UTV8" | "UTV9" | "UTV10")
+    local HOSTENV='usb2ud04.systest.receptpartner.se'
+    ;;
+    "INT1" | "INT2" | "INT3" | "INT4" | "INT5" | "INT6" | \
+    "INT7" | "INT8" | "INT9" | "INT10" | "INT11" | "INT12")
+    local HOSTENV='td01-scan.systest.receptpartner.se'
+    ;;
+    "XE")
+    local HOSTENV='localhost'
+    ;;
+    "CI1" | "CI2" | "CI3" | "CI4" | "CI5" | "CI6")
+    local HOSTENV='usb2ud04.systest.receptpartner.se'
+    ;;
+    *)
+      local HOSTENV=''
+    ;;
+  esac
+  echo "$HOSTENV"
+}
 #######################################
 # Change jboss standalone.xml config to environment value
 # Globals:
@@ -298,27 +329,7 @@ function change_standalone_to_env(){
   local ENV="$2"
   #Check that $STANDALONE && $ENV is not empty and $STANDALONE is existing file
   if [[ -n "$STANDALONE" && -n "$ENV" && -n "$( find "$STANDALONE" -type f 2>/dev/null )" ]]; then
-	case "$ENV" in
-	  "UTV1" | "UTV2" | "UTV3" | "UTV4" | "UTV5")
-		local HOSTENV='usb2ud03.systest.receptpartner.se'
-	  ;;
-	  "UTV6" | "UTV7" | "UTV8" | "UTV9" | "UTV10")
-		local HOSTENV='usb2ud04.systest.receptpartner.se'
-	  ;;
-	  "INT1" | "INT2" | "INT3" | "INT4" | "INT5" | "INT6" | \
-	  "INT7" | "INT8" | "INT9" | "INT10" | "INT11" | "INT12")
-		local HOSTENV='td01-scan.systest.receptpartner.se'
-	  ;;
-	  "XE")
-		local HOSTENV='localhost'
-	  ;;
-    "CI1" | "CI2" | "CI3" | "CI4" | "CI5" | "CI6")
-    local HOSTENV='usb2ud04.systest.receptpartner.se'
-    ;;
-	  *)
-	    local HOSTENV=''
-	  ;;
-	esac
+  local HOSTENV=$( getEnvURL "$ENV" )
 	#change SERVICE_NAME = ? to $ENV and HOST = ? to $HOSTENV if $HOSTENV is not empty
 	if [[ -n "$HOSTENV" ]]; then
 	  sed -i -e "s/SERVICE_NAME = \w\{2,4\}/SERVICE_NAME = $ENV/g" \
@@ -477,7 +488,7 @@ function runSoapTests(){
   do
     cp "$TEST_FILE" "$SOAPFILE"
 
-    setSoapTestToEnv "$SOAPFILE" "$HOST" "$SERVICE"
+    setSoapTestToEnv_private "$SOAPFILE" "$HOST" "$SERVICE"
 
     sh $SOAPUI_HOME/bin/testrunner.sh -r "$SOAPFILE" >> "$TESTRESULT"
 
@@ -485,7 +496,7 @@ function runSoapTests(){
   done
 }
 
-function setSoapTestToEnv() {
+function setSoapTestToEnv_private() {
   local SOAPFILE="$1"
   local HOST="$2"
   local SERVICE="$3"
@@ -502,21 +513,48 @@ function setSoapTestToEnv() {
   fi
 }
 
-function rebuildDatabase() {
+function setSoapEnv() {
+  echo "Which project?";
+  read PROJECT
+  echo "Which environment?"
+  read ENV
+  local TEST_FILES=$( find "$WORKSPACE" -type f -wholename "*$PROJECT-soapui*/resources/regressionstest*" 2>/dev/null | grep '\.xml$' )
+  local URL=$( getEnvURL "$ENV" )
+
+  for TEST_FILE in $TEST_FILES
+  do
+    setSoapTestToEnv_private "TEST_FILE" "$URL" "$ENV"
+  done
+}
+
+function rebuildDatabase_private() {
   local URL="$1"
-  local USERNAME="$2"
-  local PASSWORD="$3"
-  local CONTEXT="$4"
+  local USERNAME_AND_PASSWORD="$2"
+  local CONTEXT="$3"
 
   java -jar -Duser.country=SE "$SOAPUI_HOME/bin/ext/liquibase.jar" \
                       --classpath="$SOAPUI_HOME/bin/ext/ojdbc6.jar" \
                       --url="$URL" \
-                      --username="$USERNAME" \
-                      --password="$PASSWORD" \
+                      --username="$USERNAME_AND_PASSWORD" \
+                      --password="$USERNAME_AND_PASSWORD" \
                       --contexts="$CONTEXT" \
                       --changeLogFile="updateTestdata.xml" \
                       --driver="oracle.jdbc.OracleDriver" update
 
+}
+
+function rebuildDatabase() {
+  echo "Which project?"
+  read PROJECT
+  echo "Which environment?"
+  read ENV
+  echo "Which user?"
+  read USERNAME
+  echo "Which context?"
+  read CONTEXT
+
+  local URL=$( getEnvURL "$ENV" )
+  rebuildDatabase_private "$URL" "$USERNAME" "$CONTEXT"
 }
 
 inputloop
