@@ -431,7 +431,7 @@ function setSoapEnv() {
 
   for TEST_FILE in $TEST_FILES
   do
-    setSoapTestToEnv_private "TEST_FILE" "$URL" "$ENV"
+    setSoapTestToEnv_private "$TEST_FILE" "$URL" "$ENV"
   done
 }
 
