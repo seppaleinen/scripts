@@ -112,14 +112,11 @@ function inputloop() {
   echo "2: Update, build and deploy all outdated gitrepos"
   echo "3: Refresh artifacts deployed on running server"
   echo "4: Change environment in standalone.xml"
-  echo "44: Set soaptest parameters to local"
-  echo "5: Deploy single artifact to running server"
-  echo "55: redeploy database testdata"
-  echo "6: Check for uncommitted changes"
-  echo "7: Start server"
-  echo "8: Kill server"
+  echo "5: Set soaptest parameters to local"
+  echo "6: Deploy single artifact to running server"
+  echo "7: rebuild database testdata"
+  echo "8: Check for uncommitted changes"
   echo "9: Check for outdated versions"
-  echo "99: Run soaptests"
 
   read INPUT
   if [[ -z "$INPUT" ]]; then
@@ -134,90 +131,26 @@ function inputloop() {
 	  ;;
 	  4)
 	    echo "Which environment do you want to change to? e.g. INT8 or UTV1"
-		read ENV
-		echo "Write path to stpapp e.g. /opt/stpappOr"
-		read STANDALONE
-		change_standalone_to_env "$STANDALONE" "$ENV"
+		  read ENV
+		  echo "Write path to stpapp e.g. /opt/stpappOr"
+		  read STANDALONE
+		  change_standalone_to_env "$STANDALONE" "$ENV"
 	  ;;
-    44) setSoapEnv
+    5) setSoapEnv
     ;;
-	  5)
+	  6)
 	    echo "Enter name of artifact that you want to deploy e.g vara-ear"
-		read ARTIFACT
-		deploy_to_jboss "$ARTIFACT"
+		  read ARTIFACT
+		  deploy_to_jboss "$ARTIFACT"
 	  ;;
-    55) rebuildDatabase
+    7) rebuildDatabase
     ;;
-	  6) check_for_uncommitted_git_repos
+	  8) check_for_uncommitted_git_repos
 	  ;;
-	  7) start_server
-	  ;;
-	  8) kill_server
-    ;;
     9) checkServerForOutdatedVersions
-    ;;
-    99) runSoapTests
     ;;
 	esac
 	inputloop
-  fi
-}
-#######################################
-# Present choice of which server to start
-# Globals:
-#   None
-# Arguments:
-#   None
-# Returns:
-#   None
-#######################################
-function start_server(){
-  echo "-----------------------------------------"
-  echo "Which server would you like to start?"
-  echo "1: JBOSS"
-  echo "2: TOMCAT"
-  echo "3: GLASSFISH"
-  read INPUT
-  if [[ -n "$INPUT" ]]; then
-    case "$INPUT" in
-	  1)
-	    echo "Enter path to jboss"
-		read JBOSS_DIR
-	    local STPAPP=$( find "$JBOSS_DIR" -type f -name "stpapp.sh" 2>/dev/null )
-	    [[ -n "$STPAPP" ]] && $STPAPP || echo "Could not find stpapp file"
-	  ;;
-	  2) 
-		echo "Enter path to tomcat"
-		read TOMCAT_DIR
-		export TOMCAT_DIR=$TOMCAT_DIR
-	    local STARTUP="$( find "$TOMCAT_DIR" -type f -name "startup.sh" 2>/dev/null )"
-	    [[ -n "$STARTUP" ]] && $STARTUP || echo "Could not find startup file"
-	  ;;
-	  3)
-		echo "Enter path to glassfish"
-	    read GLASSFISH_DIR
-		local STARTSERV="$( find "$GLASSFISH_DIR" -type f -name "startserv" 2>/dev/null )"
-	    [[ -n "$STARTSERV" ]] && $STARTSERV || echo "Could not find startserv file"
-	  ;;
-	esac
-  fi
-}
-function kill_server(){
-  echo "-----------------------------------------"
-  echo "Which server would you like to stop?"
-  echo "1: JBOSS"
-  echo "2: TOMCAT"
-  echo "3: GLASSFISH"
-  read INPUT
-  if [[ -n "$INPUT" ]]; then
-    case "$INPUT" in
-	  1) kill_jboss
-	  ;;
-	  2) kill_tomcat
-	  ;;
-	  3)
-	  ;;
-	esac
   fi
 }
 #######################################
@@ -428,28 +361,6 @@ function deploy(){
     fi
   fi
 }
-function kill_jboss(){
-  local JBOSS_PID="$( ps -ef | grep jboss | grep -v grep | awk '{print $2}' )"
-  if [[ -n "JBOSS_PID" ]]; then
-    kill -9 "$JBOSS_PID"
-  else
-	echo "Server is not running"
-  fi
-}
-function kill_tomcat(){
-  local TOMCAT_DIR="${TOMCAT_DIR}"
-  if [[ -n "$TOMCAT_DIR" ]]; then
-	local SHUTDOWNSCRIPT=$( find $INPUT -type f -name shutdown.sh 2>/dev/null )
-  	$SHUTDOWNSCRIPT
-  else
-	echo "Enter path to tomcat directory"
-	read INPUT
-	if [[ -n "$INPUT" ]]; then
-	  local SHUTDOWNSCRIPT=$( find "$INPUT" -type f -name shutdown.sh 2>/dev/null )
-	  $SHUTDOWNSCRIPT
-	fi
-  fi
-}
 function checkServerForOutdatedVersions(){
   local TMPFILE="./tmp.file"
   wget -qO- 'http://vioxx/ssi2/versions.html' > "$TMPFILE"
@@ -465,9 +376,6 @@ function checkServerForOutdatedVersions(){
   done
   rm -rf "$TMPFILE"
 }
-#echo "jdbc@hej.com/hoj</hej>" | sed 's_@[a-zA-Z./]*_@REPLACEMENT_g'
-#sed -i '' 's_@[a-zA-Z0-9./]*_@REPLACEMENT_g' hej.xml
-
 function runSoapTests(){
   echo "Which project?"
   read PROJECT
