@@ -1,5 +1,3 @@
-START_INDEX=1;
-END_INDEX=3;
 declare -a WORDS_RIGHT;
 declare -a WORDS_WRONG;
 WORD_LIST=$( less /usr/share/dict/words | grep -Ev '[a-zA-Z]{8,}' );
@@ -11,7 +9,7 @@ function getRandomWord() {
 }
 function startGame() {
 	local START_TIME=$SECONDS;
-	for i in {1..3}
+	for i in {1..30}
 	do
 		local RANDOM_WORD=$( getRandomWord )
 		echo $RANDOM_WORD;
@@ -26,7 +24,7 @@ function startGame() {
 	local END_TIME=$(( $SECONDS - $START_TIME ));
 	echo "${#WORDS_RIGHT[@]} words right, ${#WORDS_WRONG[@]} words wrong in $END_TIME seconds"
 }
-
+clear
 echo "When ready, press any key."
 read INPUT;
 clear
