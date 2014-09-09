@@ -2,10 +2,12 @@ START_INDEX=1;
 END_INDEX=3;
 declare -a WORDS_RIGHT;
 declare -a WORDS_WRONG;
+WORD_LIST=$( less /usr/share/dict/words | grep -Ev '[a-zA-Z]{8,}' );
+MAX=$( echo $WORD_LIST | tr ' ' '\n' | wc -l )
 
 function getRandomWord() {
-	local RANDOM_NUMBER=$( awk 'BEGIN{srand();print int(rand()*(235886-1))+1 }' )
-	echo $( less /usr/share/dict/words | sed -n "$RANDOM_NUMBER"p )
+	local RANDOM_NUMBER=$( awk "BEGIN{srand();print int(rand()*($MAX-1))+1 }" )
+	echo $( echo $WORD_LIST | tr ' ' '\n' | sed -n "$RANDOM_NUMBER"p )
 }
 function startGame() {
 	local START_TIME=$SECONDS;
@@ -19,6 +21,7 @@ function startGame() {
 		else
 			WORDS_WRONG=("${WORDS_WRONG[@]}" "$WORD")
 		fi
+		clear
 	done
 	local END_TIME=$(( $SECONDS - $START_TIME ));
 	echo "${#WORDS_RIGHT[@]} words right, ${#WORDS_WRONG[@]} words wrong in $END_TIME seconds"
@@ -26,4 +29,5 @@ function startGame() {
 
 echo "When ready, press any key."
 read INPUT;
+clear
 startGame
