@@ -117,6 +117,7 @@ function inputloop() {
   echo "7: rebuild database testdata"
   echo "8: Check for uncommitted changes"
   echo "9: Check for outdated versions"
+  echo "99: Change branch on stp"
 
   read INPUT
   if [[ -z "$INPUT" ]]; then
@@ -148,6 +149,8 @@ function inputloop() {
 	  8) check_for_uncommitted_git_repos
 	  ;;
     9) checkServerForOutdatedVersions
+    ;;
+    99) changeBranchOnAllSTP
     ;;
 	esac
 	inputloop
@@ -463,6 +466,29 @@ function rebuildDatabase() {
 
   local URL=$( getEnvURL "$ENV" )
   rebuildDatabase_private "$URL" "$USERNAME" "$CONTEXT"
+}
+
+function changeBranchOnAllSTP() {
+  echo "Which branch do you want to change to?"
+  read BRANCH
+  for GIT_REPO in $( find "${WORKSPACE}" -name "*.git" )
+  do
+    local WORK_TREE="$( echo $GIT_REPO | sed 's/\.git//g' )"
+    git_command "$GIT_REPO" "fetch";
+    local RESULT=$( git --git-dir="$GIT_REPO" --work-tree="$WORK_TREE" remote show origin | grep 'tracked' | grep "$BRANCH" 2>/dev/null )
+    if [[ -n "$RESULT" ]];
+    then
+      if [[ -z $( git --git-dir="$GIT_REPO" --work-tree="$WORK_TREE" branch | grep '*' | grep "$BRANCH" ) ]];
+      then
+        git_command "$GIT_REPO" "checkout $BRANCH";
+        echo "Changed $GIT_REPO to branch $BRANCH";
+      else
+        echo "Already on branch $BRANCH";
+      fi
+    else
+      echo "$GIT_REPO does not have branch $BRANCH... Ignoring...";
+    fi
+  done
 }
 
 inputloop
