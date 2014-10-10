@@ -18,6 +18,7 @@ readonly ON_BRANCH='On branch'
 # Returns:
 #   echo of git result
 #######################################
+#@TODO change local variables to getopts
 function git_command() {
   local GIT_REPO="$1"
   local WORK_TREE="$( echo $GITREPO | sed 's/\.git//g' )"
@@ -256,6 +257,7 @@ function getEnvURL() {
 # Returns:
 #   None
 #######################################
+#@TODO change local variables to getopts
 function change_standalone_to_env(){
   local PATH_TO_STPAPP="$1"
   local STANDALONE="$PATH_TO_STPAPP/configuration/standalone.xml"	
@@ -388,7 +390,7 @@ function runSoapTests(){
     rm -f "$SOAPFILE"
   done
 }
-
+#@TODO change local variables to getopts
 function setSoapTestToEnv_private() {
   local SOAPFILE="$1"
   local HOST="$2"
@@ -405,7 +407,7 @@ function setSoapTestToEnv_private() {
       #less "$WORKSPACE/tmpsoaptest.xml" | xmllint --format - | grep 'localhost:20080'
   fi
 }
-
+#@TODO add posibility to set info on single file
 function setSoapEnv() {
   echo "Which project?";
   read PROJECT
@@ -419,7 +421,7 @@ function setSoapEnv() {
     setSoapTestToEnv_private "$TEST_FILE" "$URL" "$ENV"
   done
 }
-
+#@TODO change local variables to getopts
 function rebuildDatabase_private() {
   local URL="$1"
   local USERNAME_AND_PASSWORD="$2"
