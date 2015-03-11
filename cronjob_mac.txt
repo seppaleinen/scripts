@@ -1,0 +1,2 @@
+find ~/Downloads -type f -depth -regex '.*\.torrent$' -exec rm -P {} 2>/dev/null \;
+IFS=$'\n'; for FILE in $( find ~/.Trash | awk 'NR > 1' ); do echo $FILE; rm -rP $FILE; done;
