@@ -5,7 +5,7 @@ function logic(){
 	local cmd=$1
 	local i=$2
 	T="$(date +%s)";
-	$( eval "$cmd" > /dev/null 2>&1 );
+	eval "$cmd" > /dev/null 2>&1;
 	T="$(($(date +%s)-T))";
 	echo "The command: \"$cmd\" took $T seconds on the $i:th try";
 }
