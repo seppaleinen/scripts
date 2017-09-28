@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 if [[ -z "${WORKSPACE}" ]]; then
   echo "Where is your workspace directory? (Don't use ~ characters)"
   echo "Provide WORKSPACE environment variable to skip this step"

@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function getViewCounts() {
 	URL="$1"
 	VIMEO=$( echo "$URL" | grep -i 'vimeo' )

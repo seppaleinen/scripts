@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 declare -a WORDS_RIGHT;
 declare -a WORDS_WRONG;
 WORD_LIST=$( less /usr/share/dict/words | grep -Ev '[a-zA-Z]{8,}' );

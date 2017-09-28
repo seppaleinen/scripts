@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function checkTorrentDay() {
 	echo '***********************'
 	echo "Checking torrentday for $( echo $SEARCHPARAMETERS | sed 's/\|/, /g' )"
