@@ -12,6 +12,7 @@ if [[ -t 1 ]]; then
 fi
 
 #color the terminal and reset to normal
+printf '%s[+] Converting files \n' "$red"
 printf '%s[+] Converting files \n' "$brown"
 printf '%s[+] Converting files \n' "$purple"
 printf '%s[+] Converting files \n' "$pink"
