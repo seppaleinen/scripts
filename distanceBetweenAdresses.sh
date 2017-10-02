@@ -37,25 +37,25 @@ function haversineFormula() {
 	local LATITUDE_DELTA="$3";
 	local LONGITUDE_DELTA="$4";
 
-	local SINUS_LAT=$( sin $( echo $LATITUDE_DELTA / 2 | bc -l ) );
+	local SINUS_LAT=$( sin $( echo "$LATITUDE_DELTA" / 2 | bc -l ) );
 	local SINUS_LAT_TIMES_TWO=$( echo "" | awk "END {print $SINUS_LAT ^ $SINUS_LAT }" );
 
-	local COSINUS=$( cos $LATITUDE_DELTA );
+	local COSINUS=$( cos "$LATITUDE_DELTA" );
 	local COSINUS_TIMES_TWO=$( echo "$COSINUS * $COSINUS" | bc -l | sed 's_^\._0\._g' );
 
-	local SINUS_LNG=$( sin $( echo $LONGITUDE_DELTA / 2 | bc -l | sed 's_^\._0\._g' ) );
+	local SINUS_LNG=$( sin $( echo "$LONGITUDE_DELTA" / 2 | bc -l | sed 's_^\._0\._g' ) );
 	local SINUS_LNG_TIMES_TWO=$( echo "" | awk "END {print $SINUS_LNG ^ $SINUS_LNG }" );
 
 	local a=$( echo "$SINUS_LAT_TIMES_TWO + $COSINUS_TIMES_TWO * $SINUS_LNG_TIMES_TWO" | bc -l );
 
-	local SQUARE_A=$( squareroot $a );
+	local SQUARE_A=$( squareroot "$a" );
 	local SQUARE_1_MINUS_A=$( squareroot $( echo "1 - $a" | bc -l ) );
 	local TAN_SQUARES=$( echo - | awk "{print atan2($SQUARE_A, $SQUARE_1_MINUS_A)}" | awk {' printf "%4.10f", $1 '} );
 	local TAN_SQUARES_TIMES_TWO=$( echo "$TAN_SQUARES * $TAN_SQUARES" | bc -l );
 
 	local c=$( echo "$RADIUS * $TAN_SQUARES_TIMES_TWO" | bc -l );
 
-	echo $c;
+	echo "$c";
 }
 
 function calculateDistanceBetween() {
@@ -65,18 +65,18 @@ function calculateDistanceBetween() {
 	local LATITUDE_TWO=$( echo "$2" | awk -F':' '{print $1}' );
 	local LONGITUDE_TWO=$( echo "$2" | awk -F':' '{print $2}' );
 
-	local LATITUDE_ONE_RADIUS=$( toRadian $LATITUDE_ONE );
-	local LATITUDE_TWO_RADIUS=$( toRadian $LATITUDE_TWO );
+	local LATITUDE_ONE_RADIUS=$( toRadian "$LATITUDE_ONE" );
+	local LATITUDE_TWO_RADIUS=$( toRadian "$LATITUDE_TWO" );
 
 	local LATITUDE_DELTA=$( echo "" | awk "END {print $LATITUDE_TWO - $LATITUDE_ONE }" | sed 's_^\._0\._g'  );
 	local LONGITUDE_DELTA=$( echo "" | awk "END {print $LONGITUDE_TWO - $LONGITUDE_ONE }" | sed 's_^\._0\._g'  );
 
-	local LATITUDE_DELTA_RADIUS=$( toRadian $LATITUDE_DELTA );
-	local LONGITUDE_DELTA_RADIUS=$( toRadian $LONGITUDE_DELTA );
+	local LATITUDE_DELTA_RADIUS=$( toRadian "$LATITUDE_DELTA" );
+	local LONGITUDE_DELTA_RADIUS=$( toRadian "$LONGITUDE_DELTA" );
 
-	local RESULT=$( haversineFormula $LATITUDE_ONE_RADIUS $LATITUDE_TWO_RADIUS $LATITUDE_DELTA_RADIUS $LONGITUDE_DELTA_RADIUS );
+	local RESULT=$( haversineFormula "$LATITUDE_ONE_RADIUS" "$LATITUDE_TWO_RADIUS" "$LATITUDE_DELTA_RADIUS" "$LONGITUDE_DELTA_RADIUS" );
 
-	echo $RESULT;
+	echo "$RESULT";
 }
 
 
@@ -85,10 +85,9 @@ function getLocationFromAddress() {
 	local ADDRESS="$1"
 	local URL="http://maps.googleapis.com/maps/api/geocode/xml?address=$ADDRESS&sensor=false"
 	local RESULT=$( wget -qO- "$URL" | grep -A2 '<location>' )
-	local LATITUDE=$( echo $RESULT | awk -F'<lat>' '{print $2}' | awk -F'</lat>' '{print $1}' )
-	local LONGITUDE=$( echo $RESULT | awk -F'<lng>' '{print $2}' | awk -F'</lng>' '{print $1}' )
-	local LOCATION="$LATITUDE:$LONGITUDE"
-	echo $LOCATION
+	local LATITUDE=$( echo "$RESULT" | awk -F'<lat>' '{print $2}' | awk -F'</lat>' '{print $1}' )
+	local LONGITUDE=$( echo "$RESULT" | awk -F'<lng>' '{print $2}' | awk -F'</lng>' '{print $1}' )
+	echo "$LATITUDE:$LONGITUDE"
 }
 
 function compareAddresses() {
@@ -99,8 +98,8 @@ function compareAddresses() {
 }
 
 echo "Write an address";
-read ADDRESS1
+read -r ADDRESS1
 echo "Write another address";
-read ADDRESS2
+read -r ADDRESS2
 
 compareAddresses;
